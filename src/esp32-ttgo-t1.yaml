@@ -2,10 +2,15 @@ logger:
   level: INFO
   baud_rate: 0
 
+substitutions:
+  who: !secret who
+
 esphome:
   name: $devicename
   name_add_mac_suffix: true
   platformio_options:
+    board_build.embed_files:
+       - ../../../src/root_ca.pem
     build_unflags:
       - -O2
     build_flags:
@@ -22,8 +27,12 @@ external_components:
   - source: src/components
 
 wifi:
+  ssid: !secret wifi
+  password: !secret wifi_password
   ap:
     ssid: $devicename
+
+captive_portal:
 
 web_server:
   port: 80
@@ -70,12 +79,22 @@ button:
           url: !secret slack_webhook
           headers:
             Content-Type: application/json
-          body: !lambda |-
-            size_t needed = snprintf(NULL, 0, "{\"blocks\":[{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"%f dbm\"},\"fields\":[{\"type\":\"mrkdwn\",\"text\":\"*From:* %s\"},{\"type\":\"mrkdwn\",\"text\":\"*To: *!secret who\"}]}]}", gsm_rssi->get_state(), "$devicename") + 1;
-            char  *buffer = (char*) malloc(needed);
-            sprintf(buffer, "{\"blocks\":[{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"%f dbm\"},\"fields\":[{\"type\":\"mrkdwn\",\"text\":\"*From:* %s\"},{\"type\":\"mrkdwn\",\"text\":\"*To: *!secret who\"}]}]}", gsm_rssi->get_state(), "$devicename");
-            return buffer;
-          verify_ssl: false
+          json: |-
+            JsonObject block = root["blocks"].createNestedObject();
+            block["type"] = "section";
+
+            JsonObject block_text = block.createNestedObject("text");
+            block_text["type"] = "mrkdwn";
+            block_text["text"] = "This is a test message";
+
+            JsonArray block_fields = block.createNestedArray("fields");
+            JsonObject block_fields_0 = block_fields.createNestedObject();
+            block_fields_0["type"] = "mrkdwn";
+            block_fields_0["text"] = "*From:* $devicename" ;
+
+            JsonObject block_fields_1 = block_fields.createNestedObject();
+            block_fields_1["type"] = "mrkdwn";
+            block_fields_1["text"] = "*To:* $who";
           on_response:
             then:
               - logger.log:
@@ -101,8 +120,6 @@ switch:
     restore_mode: ALWAYS_ON
     internal: true
 
-prometheus:
-
 sim800l:
   rssi:
     name: "GSM Signal"
@@ -125,12 +142,22 @@ sim800l:
         url: !secret slack_webhook
         headers:
           Content-Type: application/json
-        body: !lambda |-
-          size_t needed = snprintf(NULL, 0, "{\"blocks\":[{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"%s\"},\"fields\":[{\"type\":\"mrkdwn\",\"text\":\"*From:* %s\"},{\"type\":\"mrkdwn\",\"text\":\"*To: * !secret who\"}]}]}", message.c_str(), sender.c_str()) + 1;
-          char  *buffer = (char*) malloc(needed);
-          sprintf(buffer, "{\"blocks\":[{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"%s\"},\"fields\":[{\"type\":\"mrkdwn\",\"text\":\"*From:* %s\"},{\"type\":\"mrkdwn\",\"text\":\"*To: * !secret who\"}]}]}", message.c_str(), sender.c_str());
-          return buffer;
-        verify_ssl: false
+        json: |-
+          JsonObject block = root["blocks"].createNestedObject();
+          block["type"] = "section";
+
+          JsonObject block_text = block.createNestedObject("text");
+          block_text["type"] = "mrkdwn";
+          block_text["text"] = message;
+
+          JsonArray block_fields = block.createNestedArray("fields");
+          JsonObject block_fields_0 = block_fields.createNestedObject();
+          block_fields_0["type"] = "mrkdwn";
+          block_fields_0["text"] = "*From:* " + sender;
+
+          JsonObject block_fields_1 = block_fields.createNestedObject();
+          block_fields_1["type"] = "mrkdwn";
+          block_fields_1["text"] = "*To:* $who";
         on_response:
           then:
             - logger.log:

@@ -2,4 +2,4 @@ substitutions:
   devicename: sms2slack
   
 packages:
-  device_base: !include src/esp32-ttgo-t1.yml
+  device_base: !include src/esp32-ttgo-t1.yaml

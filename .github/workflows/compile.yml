@@ -7,30 +7,30 @@ on:
 
 jobs:
   build:
-
+    name: Build firmware
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-    - name: Cache pip
+    - name: Cache poetry
       uses: actions/cache@v2
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('poetry.lock') }}
+        path: ~/.cache
+        key: ${{ runner.os }}-poetry-v1-${{ hashFiles('poetry.lock') }}
         restore-keys: |
-          ${{ runner.os }}-pip-
+          ${{ runner.os }}-poetry-
     - name: Cache .esphome
       uses: actions/cache@v2
       with:
         path: .esphome
-        key: ${{ runner.os }}-esphome-${{ hashFiles('**/*.yaml') }}
+        key: ${{ runner.os }}-esphome-v1-${{ hashFiles('**/*.yaml') }}
         restore-keys: |
           ${{ runner.os }}-esphome-
     - name: Cache PlatformIO
       uses: actions/cache@v2
       with:
         path: ~/.platformio
-        key: ${{ runner.os }}-platformio-${{ hashFiles('poetry.lock') }}
+        key: ${{ runner.os }}-platformio-v1-${{ hashFiles('**/*.yaml') }}
         restore-keys: |
           ${{ runner.os }}-platformio-
     - name: Set up Python
