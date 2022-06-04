@@ -1,0 +1,57 @@
+name: Compile
+
+# Controls when the workflow will run
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('poetry.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - name: Cache .esphome
+      uses: actions/cache@v2
+      with:
+        path: .esphome
+        key: ${{ runner.os }}-esphome-${{ hashFiles('**/*.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-esphome-
+    - name: Cache PlatformIO
+      uses: actions/cache@v2
+      with:
+        path: ~/.platformio
+        key: ${{ runner.os }}-platformio-${{ hashFiles('poetry.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-platformio-
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install dependencies
+      run: |
+        python -m pip install poetry
+        poetry install
+    - name: Set secrets.yaml
+      run: |
+          echo "$SECRETS_FILE" > src/secrets.yaml
+      shell: bash
+      env:
+        SECRETS_FILE : ${{secrets.SECRETS_FILE}}
+    - name: Compile
+      run: |
+        poetry run esphome compile sms2slack.yaml
+    - name: Upload build
+      uses: actions/upload-artifact@v2
+      with:
+        name: firmware.bin
+        path: .esphome/build/sms2slack/.pioenvs/sms2slack/firmware.bin

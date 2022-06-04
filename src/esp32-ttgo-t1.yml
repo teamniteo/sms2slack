@@ -1,0 +1,155 @@
+logger:
+  level: INFO
+  baud_rate: 0
+
+esphome:
+  name: $devicename
+  name_add_mac_suffix: true
+  platformio_options:
+    build_unflags:
+      - -O2
+    build_flags:
+      - -Os
+
+esp32:
+  board: ttgo-t1
+  framework:
+    type: arduino
+    version: "2.0.3"
+    platform_version: "4.3.0"
+
+external_components:
+  - source: src/components
+
+wifi:
+  ap:
+    ssid: $devicename
+
+web_server:
+  port: 80
+  version: 1
+  auth:
+    username: admin
+    password: !secret admin_password
+
+time:
+  - platform: sntp
+    id: esptime
+
+uart:
+  baud_rate: 9600
+  tx_pin: GPIO27
+  rx_pin: GPIO26
+
+sensor:
+  - platform: uptime
+    name: Uptime
+    id: uptime_sensor
+    update_interval: 5s
+  - platform: wifi_signal
+    name: "WiFi Signal Sensor"
+    update_interval: 60s
+
+button:
+  - platform: restart
+    name: "Restart"
+  - platform: template
+    name: "Delete all messages"
+    on_press:
+      - logger.log:
+          format: "Deleting all messages"
+          level: INFO
+      - sim800l.delete_sms:
+  - platform: template
+    name: "Test Slack"
+    on_press:
+      - logger.log:
+          format: "Sending test message to Slack"
+          level: INFO
+      - http_request.post:
+          url: !secret slack_webhook
+          headers:
+            Content-Type: application/json
+          body: !lambda |-
+            size_t needed = snprintf(NULL, 0, "{\"blocks\":[{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"%f dbm\"},\"fields\":[{\"type\":\"mrkdwn\",\"text\":\"*From:* %s\"},{\"type\":\"mrkdwn\",\"text\":\"*To: *!secret who\"}]}]}", gsm_rssi->get_state(), "$devicename") + 1;
+            char  *buffer = (char*) malloc(needed);
+            sprintf(buffer, "{\"blocks\":[{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"%f dbm\"},\"fields\":[{\"type\":\"mrkdwn\",\"text\":\"*From:* %s\"},{\"type\":\"mrkdwn\",\"text\":\"*To: *!secret who\"}]}]}", gsm_rssi->get_state(), "$devicename");
+            return buffer;
+          verify_ssl: false
+          on_response:
+            then:
+              - logger.log:
+                  format: "Slack status: %d"
+                  level: INFO
+                  args:
+                    - status_code
+
+switch:
+  - platform: gpio
+    internal: true
+    id: "key_pin"
+    pin: GPIO4
+    restore_mode: ALWAYS_OFF
+  - platform: gpio
+    id: "reset_pin"
+    pin: GPIO5
+    restore_mode: ALWAYS_ON
+    internal: true
+  - platform: gpio
+    id: "power_pin"
+    pin: GPIO23
+    restore_mode: ALWAYS_ON
+    internal: true
+
+prometheus:
+
+sim800l:
+  rssi:
+    name: "GSM Signal"
+    id: gsm_rssi
+  on_registration:
+    - logger.log:
+        format: "Registered to the network"
+        level: INFO
+  on_sms_received:
+    - lambda: |-
+        id(sms_sender).publish_state(sender);
+        id(sms_message).publish_state(message);
+        char time_now[64];
+        id(esptime).utcnow().strftime(time_now, sizeof(time_now), "%Y-%m-%d %H:%M UTC");
+        id(sms_time).publish_state(time_now);
+    - logger.log:
+        format: "Received '%s' from %s"
+        args: ["message.c_str()", "sender.c_str()"]
+    - http_request.post:
+        url: !secret slack_webhook
+        headers:
+          Content-Type: application/json
+        body: !lambda |-
+          size_t needed = snprintf(NULL, 0, "{\"blocks\":[{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"%s\"},\"fields\":[{\"type\":\"mrkdwn\",\"text\":\"*From:* %s\"},{\"type\":\"mrkdwn\",\"text\":\"*To: * !secret who\"}]}]}", message.c_str(), sender.c_str()) + 1;
+          char  *buffer = (char*) malloc(needed);
+          sprintf(buffer, "{\"blocks\":[{\"type\":\"section\",\"text\":{\"type\":\"mrkdwn\",\"text\":\"%s\"},\"fields\":[{\"type\":\"mrkdwn\",\"text\":\"*From:* %s\"},{\"type\":\"mrkdwn\",\"text\":\"*To: * !secret who\"}]}]}", message.c_str(), sender.c_str());
+          return buffer;
+        verify_ssl: false
+        on_response:
+          then:
+            - logger.log:
+                format: "Slack status: %d"
+                level: INFO
+                args:
+                  - status_code
+
+text_sensor:
+  - platform: template
+    id: sms_sender
+    name: "Last SMS Sender"
+  - platform: template
+    id: sms_message
+    name: "Last SMS Message"
+  - platform: template
+    id: sms_time
+    name: "Last SMS timestamp"
+
+http_request:
+  useragent: sms2slack/$devicename
+  timeout: 10s
