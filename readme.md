@@ -26,6 +26,12 @@ wifi_password: "my wifi password"
 ## Flashing firmware
 
 1. Go to the https://web.esphome.io/
-2. Attach your device and click on Connect and Select "USB to UART Bridge" in the web browser prompt
+2. Attach your device and click on **Connect* and select "USB to UART Bridge" in the web browser prompt
 3. Click on **Install** and select your previously downloaded file and click **Install**
 4. After 2-3 minutes your device should connect to WiFi you specified in config, if nothing happens check the **Logs**.
+
+## Updating firmware
+
+1. Generate the firmware file by clicking the **Run workflow** button on [Actions/Compile](../../actions/workflows/compile.yml) and then refresh the page, so that you see a new workflow running.
+2. Wait for the workflow to finish, and then download **firmware.bin** under the **Summary/Artifacts** tab.
+3. Login as **admin** to the sms2slack dashboard and upload the **firmware.bin** as an OTA update. 

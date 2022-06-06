@@ -24,7 +24,8 @@ esp32:
     platform_version: "4.3.0"
 
 external_components:
-  - source: src/components
+  - source: github://teamniteo/sms2slack-components
+    components: [ sim800l, http_request]
 
 wifi:
   ssid: !secret wifi
