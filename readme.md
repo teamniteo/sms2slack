@@ -2,7 +2,7 @@
 
 [![Compile](../../actions/workflows/compile.yml/badge.svg)](../..//actions/workflows/compile.yml)
 
-A code for sms2slack device that forwards... SMS messages to Slack. :)
+Code for sms2slack device that forwards... SMS messages to Slack. Full build instructions on https://sms2slack.com/assemble. You can also buy a pre-soldered and pre-flashed device on https://sms2slack.com/buy. 
 
 ## Prerequisite
 
