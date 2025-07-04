@@ -1,3 +1,7 @@
+## We're hiring!
+
+At Niteo we regularly contribute back to the Open Source community. If you do too, we'd like to invite you to [join our team](https://niteo.co/careers)!
+
 # sms2slack
 
 [![Compile](../../actions/workflows/compile.yml/badge.svg)](../..//actions/workflows/compile.yml)
