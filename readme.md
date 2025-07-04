@@ -1,7 +1,3 @@
-## We're hiring!
-
-At Niteo we regularly contribute back to the Open Source community. If you do too, we'd like to invite you to [join our team](https://niteo.co/careers)!
-
 # sms2slack
 
 [![Compile](../../actions/workflows/compile.yml/badge.svg)](../..//actions/workflows/compile.yml)
@@ -39,3 +35,7 @@ wifi_password: "my wifi password"
 1. Generate the firmware file by clicking the **Run workflow** button on [Actions/Compile](../../actions/workflows/compile.yml) and then refresh the page, so that you see a new workflow running.
 2. Wait for the workflow to finish, and then download **firmware.bin** under the **Summary/Artifacts** tab.
 3. Login as **admin** to the sms2slack dashboard and upload the **firmware.bin** as an OTA update. 
+
+## We're hiring!
+
+At Niteo we regularly contribute back to the Open Source community. If you do too, we'd like to invite you to [join our team](https://niteo.co/careers)!
